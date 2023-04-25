@@ -21,6 +21,6 @@
 
 ## TO-DO (immediate actions)
 
-- [ ] Add TCCON h5 reader
+- [ ] Add TCCON h5/nc reader
 
 ## Next Steps
