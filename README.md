@@ -13,7 +13,7 @@
 
 ### Step 4 Map Display
 
-## TO-DO (imidiate actions)
+## TO-DO (immediate actions)
 
 - [ ] Add TCCON h5 reader
 
