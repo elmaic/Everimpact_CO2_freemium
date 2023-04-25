@@ -1,7 +1,12 @@
-# CO2 Freemium product 
-![Logo](Everimpact_logo.png)
+# CO2 Freemium product ![Logo](Everimpact_logo.png)
 
 ## Description of the pipeline
+
+### Overview
+
+- The goal of this pipeline is the gathering and process of the CO2 data measured by OCO-2, OCO-3 and GOSAT2
+- Pre processing the data and comparing it with TCCON CO2 dataset for validation of our measurements.
+- Once the information has been validated, will be presented in a map type presentation, filtered by date and geoposition
 
 ### Step 1 Gather CO2 data
 
