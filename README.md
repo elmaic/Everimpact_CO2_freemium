@@ -1,4 +1,5 @@
-# CO2 Freemium product ![Logo](Everimpact_logo.png)
+![Logo](Everimpact_logo.png)
+# CO2 Freemium product 
 
 ## Description of the pipeline
 
