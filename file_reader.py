@@ -1,7 +1,8 @@
 import os
 import h5py
 import pandas as pd
-import netCDF4 as nc
+import netCDF4 as nc4
+from scipy.io import netcdf
 from datetime import datetime
 
 def conv_date_oco2(d):
@@ -81,7 +82,6 @@ def gosat2_h5_to_csv(folder_path, output_path):
             df.to_csv(output_file, index=False)
     print(f"{counter} files converted to CSV.")
 
-
 def oco2_nc4_to_csv(folder_path, output_path):
     """
     Change the nc4 file from OCO2 and OCO3 to CSV
@@ -110,7 +110,7 @@ def oco2_nc4_to_csv(folder_path, output_path):
     #open each file
     for file_path in file_paths:
       #open the netCDF4 file
-      with nc.Dataset(file_path, "r") as f:
+      with nc4.Dataset(file_path, "r") as f:
          #substraction of the desired variables into a new dataframe
          df_oco2_xco2= pd.DataFrame()
          df_oco2_xco2['DateTime']= f['sounding_id'][:]
@@ -137,6 +137,64 @@ def oco2_nc4_to_csv(folder_path, output_path):
 
       print(f"{counter} files converted to CSV.")
 
-file_in = 'gosat'
+def tccon_nc_to_csv(folder_path, output_path):
+    """
+    Open an NC file of the TCCON database and transforms it to a CSV file
+
+    CSV files format:
+      Hour
+      Longitude
+      Latitude
+      XCO2
+      XCO2 Quality flag
+      year
+      month
+      day
+
+    Parameters:
+      folder_path: path to the folder of the nc4 files from oco2/3
+      output_path: path to store the CSV files
+
+    Returns:
+    """
+    #fetching of file paths on a list
+    file_paths = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith('.nc')]
+    #add counter
+    counter = 0
+
+    #open each file
+    for file_path in file_paths:
+      #open the netCDF4 file
+      with netcdf.NetCDFFile(file_path) as f:
+       df_tccon = pd.DataFrame()
+       # Extract the variable data
+       df_tccon['Geometric Altitude (km)'] = f.variables['zobs_km'][:]
+       df_tccon['Pressure Altitude (km)'] = f.variables['zmin_km'][:]
+       df_tccon['year'] = f.variables['year'][:]
+       df_tccon['xco2_ppm'] = f.variables['xco2_ppm'][:]
+       df_tccon['xch4_ppm'] = f.variables['xch4_ppm'][:]
+       df_tccon['time'] = f.variables['time'][:]
+       #    df_tccon['prior_co2'] = f.variables['prior_co2'][:]
+       #    df_tccon['prior_ch4'] = f.variables['prior_ch4'][:]
+       #    df_tccon['ak_co2'] = f.variables['ak_co2'][:]
+       #    df_tccon['ak_ch4'] = f.variables['ak_ch4'][:]
+
+       counter += 1
+
+       output_file = f"{output_path}/file_{counter}.csv"
+       df_tccon.to_csv(output_file, index=False)
+    print(f"{counter} files converted to CSV.")
+
+      
+
+file_in = 'tccon'
 file_out= 'gosat\csv'
-h = gosat2_h5_to_csv(file_in, file_out)
+file = 'tccon\ae20120522_20181031.public.nc'
+output_path = 'tccon\csv'
+
+file2read = netcdf.NetCDFFile(r'tccon\ae20120522_20181031.public.nc')
+temp = list(file2read.variables.keys())
+print(temp)
+
+h = tccon_nc_to_csv(file_in, output_path)
+    
