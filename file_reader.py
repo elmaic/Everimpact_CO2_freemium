@@ -2,8 +2,8 @@ import os
 import h5py
 import pandas as pd
 import netCDF4 as nc4
-from scipy.io import netcdf
-from datetime import datetime
+from datetime import datetime, timedelta
+from netCDF4 import Dataset
 
 def conv_date_oco2(d):
     """
@@ -28,13 +28,20 @@ def conv_date_gosat2(d):
     date_str = d.decode('utf-8')
     return datetime.strptime(date_str, '%Y-%m-%dT%H:%M:%S.%fZ')
 
+def conv_date_tccon(d):
+   '''
+   '''
+   base_date = datetime(1970, 1, 1)
+   converted_date = base_date + timedelta(days=d)
+   return converted_date.strftime('%Y-%m-%dT%H:%M:%S')
+
 def gosat2_h5_to_csv(folder_path, output_path):
     '''
     Opens multiple H5 files with the format of the GOSAT2, converts them to CSV files, and saves the CSV files.
 
     CSV files format:
       Hour
-      Longitude
+      longitude
       Latitude
       XCO2
       XCH4
@@ -59,8 +66,8 @@ def gosat2_h5_to_csv(folder_path, output_path):
         with h5py.File(file_path, "r") as f:
             df_oco2 = pd.DataFrame()
             df_oco2['DateTime'] = f['/SoundingAttribute/observationTime'][:]
-            df_oco2['longitude'] = f['/SoundingGeometry/longitude'][:]
-            df_oco2['latitude'] = f['/SoundingGeometry/latitude'][:]
+            df_oco2['Longitude'] = f['/SoundingGeometry/longitude'][:]
+            df_oco2['Latitude'] = f['/SoundingGeometry/latitude'][:]
             df_oco2['Xco2'] = f['/RetrievalResult/xco2'][:]
             df_oco2['xch4'] = f['/RetrievalResult/xch4'][:]
 
@@ -91,7 +98,6 @@ def oco2_nc4_to_csv(folder_path, output_path):
       Longitude
       Latitude
       XCO2
-      XCO2 Quality flag
       year
       month
       day
@@ -117,8 +123,6 @@ def oco2_nc4_to_csv(folder_path, output_path):
          df_oco2_xco2['Longitude']= f['longitude'][:]
          df_oco2_xco2['Latitude']= f['latitude'][:]
          df_oco2_xco2['Xco2']= f['xco2'][:]
-         df_oco2_xco2['quality_flag']= f['xco2_quality_flag'][:]
-
          #Convert soundingID to datetime format
          df_oco2_xco2['DateTime']= df_oco2_xco2['DateTime'].apply(conv_date_oco2)
          df_oco2_xco2['DateTime']= pd.to_datetime(df_oco2_xco2['DateTime'])
@@ -142,11 +146,10 @@ def tccon_nc_to_csv(folder_path, output_path):
     Open an NC file of the TCCON database and transforms it to a CSV file
 
     CSV files format:
-      Hour
       Longitude
       Latitude
+      year
       XCO2
-      XCO2 Quality flag
       year
       month
       day
@@ -165,15 +168,24 @@ def tccon_nc_to_csv(folder_path, output_path):
     #open each file
     for file_path in file_paths:
       #open the netCDF4 file
-      with netcdf.NetCDFFile(file_path) as f:
+      with Dataset(file_path) as f:
        df_tccon = pd.DataFrame()
        # Extract the variable data
-       df_tccon['Geometric Altitude (km)'] = f.variables['zobs_km'][:]
-       df_tccon['Pressure Altitude (km)'] = f.variables['zmin_km'][:]
-       df_tccon['year'] = f.variables['year'][:]
-       df_tccon['xco2_ppm'] = f.variables['xco2_ppm'][:]
-       df_tccon['xch4_ppm'] = f.variables['xch4_ppm'][:]
-       df_tccon['time'] = f.variables['time'][:]
+       df_tccon['DateTime'] = f.variables['time'][:]
+       df_tccon['Longitude'] = f.variables['long_deg'][:]
+       df_tccon['Latitude'] = f.variables['lat_deg'][:]
+#       df_tccon['Geometric Altitude'] = f.variables['zobs_km'][:]
+#       df_tccon['Pressure Altitude'] = f.variables['zmin_km'][:]
+       df_tccon['Xco2'] = f.variables['xco2_ppm'][:]
+#       df_tccon['xch4'] = f.variables['xch4_ppm'][:]
+        #Convert soundingID to datetime format
+       df_tccon['DateTime']= df_tccon['DateTime'].apply(conv_date_tccon)
+       df_tccon['DateTime']= pd.to_datetime(df_tccon['DateTime'])
+
+        # YEAR and month column
+       df_tccon['Year']= df_tccon['DateTime'].dt.year
+       df_tccon['Month']= df_tccon['DateTime'].dt.month
+       df_tccon['Day']= df_tccon['DateTime'].dt.day
        #    df_tccon['prior_co2'] = f.variables['prior_co2'][:]
        #    df_tccon['prior_ch4'] = f.variables['prior_ch4'][:]
        #    df_tccon['ak_co2'] = f.variables['ak_co2'][:]
@@ -185,16 +197,9 @@ def tccon_nc_to_csv(folder_path, output_path):
        df_tccon.to_csv(output_file, index=False)
     print(f"{counter} files converted to CSV.")
 
-      
 
-file_in = 'tccon'
-file_out= 'gosat\csv'
-file = 'tccon\ae20120522_20181031.public.nc'
-output_path = 'tccon\csv'
+file_in = 'oco2'
+file_out= 'oco2\csv'
 
-file2read = netcdf.NetCDFFile(r'tccon\ae20120522_20181031.public.nc')
-temp = list(file2read.variables.keys())
-print(temp)
-
-h = tccon_nc_to_csv(file_in, output_path)
+h = oco2_nc4_to_csv(file_in, file_out)
     
