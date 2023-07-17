@@ -1,6 +1,7 @@
 import os
 import h5py
 import pandas as pd
+import numpy as np
 import netCDF4 as nc4
 from datetime import datetime, timedelta
 from netCDF4 import Dataset
@@ -69,7 +70,7 @@ def gosat2_h5_to_csv(folder_path, output_path):
             df_oco2['Longitude'] = f['/SoundingGeometry/longitude'][:]
             df_oco2['Latitude'] = f['/SoundingGeometry/latitude'][:]
             df_oco2['Xco2'] = f['/RetrievalResult/xco2'][:]
-            df_oco2['xch4'] = f['/RetrievalResult/xch4'][:]
+          #  df_oco2['xch4'] = f['/RetrievalResult/xch4'][:]
 
             #saving date and time
             df_oco2['DateTime']= df_oco2['DateTime'].apply(conv_date_gosat2)
@@ -79,6 +80,7 @@ def gosat2_h5_to_csv(folder_path, output_path):
             df_oco2['Year']= df_oco2['DateTime'].dt.year
             df_oco2['Month']=df_oco2['DateTime'].dt.month
             df_oco2['Day']= df_oco2['DateTime'].dt.day
+            df_oco2['Hour']= df_oco2['DateTime'].dt.hour
 
             #counter
             counter += 1
@@ -131,12 +133,13 @@ def oco2_nc4_to_csv(folder_path, output_path):
          df_oco2_xco2['Year']= df_oco2_xco2['DateTime'].dt.year
          df_oco2_xco2['Month']= df_oco2_xco2['DateTime'].dt.month
          df_oco2_xco2['Day']= df_oco2_xco2['DateTime'].dt.day
+         df_oco2_xco2['Hour']= df_oco2_xco2['DateTime'].dt.hour
          
          #count +1
          counter += 1
 
          #save the new Dataset to a CSV
-         output_file = f"{output_path}/file_{counter}.csv"
+         output_file = f"{output_path}/file2023_{counter}.csv"
          df_oco2_xco2.to_csv(output_file, index=False)
 
       print(f"{counter} files converted to CSV.")
@@ -197,9 +200,66 @@ def tccon_nc_to_csv(folder_path, output_path):
        df_tccon.to_csv(output_file, index=False)
     print(f"{counter} files converted to CSV.")
 
-
-file_in = 'oco2'
-file_out= 'oco2\csv'
-
-h = oco2_nc4_to_csv(file_in, file_out)
+def icos_to_csv(file_in):
     
+    file = pd.read_csv(file_in, delimiter=';', nrows=18)
+
+    latitude_line = file[file.apply(lambda row: '# LATITUDE:' in str(row), axis=1)].values[0][0]
+    latitude_str = latitude_line.split(':')[1].strip()
+    latitude = None
+    
+    if latitude_str and latitude_str != 'CO2':
+        try:
+            latitude = float(latitude_str.split(' ')[0]) * (-1 if 'S' in latitude_str else 1)
+        except ValueError:
+            pass  # or any other desired handling
+
+    longitude_line = file[file.apply(lambda row: '# LONGITUDE:' in str(row), axis=1)].values[0][0]
+    longitude_str = longitude_line.split(':')[1].strip()
+    longitude = None
+    
+    if longitude_str and longitude_str != 'CO2':
+        try:
+            longitude = float(longitude_str.split(' ')[0]) * (-1 if 'W' in longitude_str else 1)
+        except ValueError:
+            pass  # or any other desired handling
+    
+    df_ICOS = pd.read_csv(file_in, delimiter=';', skiprows=38)
+    df_ICOS['Latitude'] = latitude
+    df_ICOS['Longitude'] = longitude
+
+    df_ICOS.loc[~df_ICOS['Flag'].isin(['U', 'N']), 'Flag'] = None
+    df_ICOS.dropna(subset=['Flag'], inplace=True)
+
+    df_ICOS['Xco2'] = df_ICOS['co2'][:]
+    df_ICOS = df_ICOS[['Latitude', 'Longitude','Xco2', 'Year', 'Month','Day', 'Hour', 'SamplingHeight', 'Flag']]
+
+    return df_ICOS
+
+def icos_file_scrapper(folder_path, output_path):
+    '''
+    cokngóij
+    '''
+    #fetching of file paths on a list
+    file_paths = [os.path.join(folder_path, f) for f in os.listdir(folder_path) if f.endswith('.CO2')]
+    #add counter
+    counter = 0
+    df_agregation = pd.DataFrame()
+    for file in file_paths:
+      df_h = icos_to_csv(file)
+      # Ensure consistent column names
+      if counter == 0:
+         df_agregation = df_h
+      else:
+         df_agregation = pd.concat([df_agregation, df_h], ignore_index=True)
+      counter += 1
+      print(df_agregation)
+
+    output_file_agg = f"{output_path}/icos.csv"
+    df_agregation.to_csv(output_file_agg, index=False)
+    print(counter)
+        
+
+file_out= 'ICOS\saclay\csv'
+file_in = 'ICOS\saclay'
+h = icos_file_scrapper(file_in, file_out)
