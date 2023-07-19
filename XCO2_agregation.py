@@ -15,7 +15,11 @@ pathDict = {'oco2':'oco2\csv',
             'oco3': 'oco3\csv',
             'tccon':'tccon\csv',
             'gosat2':'gosat\csv',
-            'icos':'ICOS\saclay\csv'}
+            'icos':'ICOS\saclay\csv',
+            'TRN':'ICOS\Trainou\csv',
+            'OPE':'ICOS\Observatoire\csv',
+            'PUY':'ICOS\PuyDeDome\csv',
+            'SSL':'ICOS\Schaunisland\csv'}
 
 satData = {'oco2':'oco2\csv',
             'oco3': 'oco3\csv',
@@ -125,29 +129,54 @@ def hour_csv(df, satData):
 
 #f = xco2_geoloc(pathDict,coordParis, dateDict ,output_folder)
 g = r'data/oco2/file.csv'
-h = monthly_csv(g, satData, output_folder)
-
+#h = monthly_csv(g, satData, output_folder)
  
-""" Scatter_plot = r'data/oco2/file_hours.csv'
+Scatter_plot = r'data/oco2/file_month.csv'
 df_sct = pd.read_csv(Scatter_plot)
 print(df_sct)
-dfSat = df_sct[df_sct['source'] == 'oco3\csv']
-dfSat = dfSat['Xco2'].mean()
+dfSat = df_sct[df_sct['source'] == 'oco3\csv'].groupby(['Month', 'Day', 'Hour'])['Xco2'].mean()
 
 print(dfSat)
 
-dfGnd100 = df_sct[df_sct['SamplingHeight'] == 100]
-dfGnd15 = df_sct[df_sct['SamplingHeight'] == 15]
-dfGnd60 = df_sct[df_sct['SamplingHeight'] == 60]
+dfgnd = df_sct[df_sct['source'] == 'ICOS\saclay\csv'].groupby(['Month', 'Day', 'Hour'])['Xco2'].mean()
+print(dfgnd)
 
-plt.subplot(3,2,1)
-sns.scatterplot(x= dfSat, y=dfGnd100['Xco2'])
-plt.subplot(3,2,2)
-sns.scatterplot(x= dfSat, y=dfGnd15['Xco2'])
-plt.subplot(3,2,3)
-sns.scatterplot(x= dfSat, y=dfGnd60['Xco2'])
-plt.show() 
- """
+dfGnd100 = df_sct[df_sct['SamplingHeight'] == 100].groupby(['Month','Day', 'Hour'])['Xco2'].mean()
+print(dfGnd100)
+dfGnd15 = df_sct[df_sct['SamplingHeight'] == 15].groupby(['Month','Day', 'Hour'])['Xco2'].mean()
+print(dfGnd15)
+dfGnd60 = df_sct[df_sct['SamplingHeight'] == 60].groupby(['Month', 'Day', 'Hour'])['Xco2'].mean()
+print(dfGnd15)
+
+
+
+plt.subplot(2, 2, 1)
+sns.scatterplot(x=dfSat, y=dfGnd100)
+plt.text(0.5, 0.9, '100', ha='center', va='center', transform=plt.gca().transAxes)
+plt.ylabel('ICOS')
+plt.xlabel('Sat Data')
+
+plt.subplot(2, 2, 2)
+sns.scatterplot(x=dfSat, y=dfGnd15)
+plt.text(0.5, 0.9, '15', ha='center', va='center', transform=plt.gca().transAxes)
+plt.ylabel('ICOS')
+plt.xlabel('Sat Data')
+
+plt.subplot(2, 2, 3)
+sns.scatterplot(x=dfSat, y=dfGnd60)
+plt.text(0.5, 0.9, '60', ha='center', va='center', transform=plt.gca().transAxes)
+plt.ylabel('ICOS')
+plt.xlabel('Sat Data')
+
+plt.subplot(2, 2, 4)
+sns.scatterplot(x=dfSat, y=dfgnd)
+plt.text(0.5, 0.9, 'Total', ha='center', va='center', transform=plt.gca().transAxes)
+plt.ylabel('ICOS')
+plt.xlabel('Sat Data')
+
+plt.tight_layout()
+plt.show()
+
 """ 
 df_plot = pd.read_csv(r'data/oco2/file.csv')
 months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
